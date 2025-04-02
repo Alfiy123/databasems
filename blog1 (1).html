@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Transaction Schedules & Serializability</title>
+   
+<style>
+
+body {
+    font-family:Arial;
+    background-color:#ADD8E6;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color:#C0C0C0;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+section {
+    padding: 20px;
+    margin: 20px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+h1{ 
+    color: #333;
+  animation: 3s infinite alternate slide-in;
+}
+
+ h2 {
+    color: #333;
+}
+
+h3 {
+    color: #4CAF50;
+}
+
+textarea {
+    font-family: monospace;
+    font-size: 14px;
+}
+
+button {
+    background-color:#C0C0C0;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+}
+
+img{
+border-radius:8px;
+border:1px solid #ddd;
+padding:5px;
+width: 200px;
+float:right;
+}
+
+</style>
+
+
+
+</head>
+<body>
+    <header>
+       <marquee behavior="alternate">  <h1>SCHEDULES BASED ON SERIALIZABILITY</h1>
+</marquee> 
+        <nav>
+            <ul>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#serializable-schedules">Serializable Schedules</a></li>
+                <li><a href="#interactive-schedule">Types of schedules</a></li>
+               
+            </ul>
+        </nav>
+    </header>
+
+    <section id="introduction">
+        <h2>Introduction to Serializability</h2>
+        <p>
+<img src="data:image/jpeg;base64,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">
+</img>            
+<section>
+In the context of database management systems (DBMS), schedules refer to the sequence of operations (such as reads and writes) that are performed by multiple transactions. These transactions are typically executed concurrently, and a schedule records the interleaving of operations from these transactions.
+
+The serializability of a schedule is a critical concept in transaction management, as it ensures the correctness of concurrent executions. A schedule is considered serializable if its result (i.e., the final state of the database) is equivalent to that of some serial schedule. A serial schedule is one in which the transactions are executed one after the other, without any interleaving of operations.
+</section>        
+</p>
+
+
+
+
+
+
+
+
+
+        <p>
+            In a serial schedule, transactions are executed one after another, without overlapping. However, in most systems, transactions are executed concurrently to improve performance. We need to ensure that the concurrent execution doesn't lead to inconsistencies.
+        </p>
+    </section>
+
+    <section id="serializable-schedules">
+        <h2>What Makes a Schedule Serializable?</h2>
+        <p>
+
+
+            A schedule is considered serializable if the result of executing it concurrently is equivalent to executing the transactions serially. This can be achieved by ensuring that the interleaving of operations does not cause conflicts, like dirty reads, non-repeatable reads, or lost updates.
+
+        </p>
+
+
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAV4AAACQCAMAAAB3YPNYAAAAkFBMVEX////E6/vz+/6v4fliyPTV8fzA6vuH1/ft9/0yvPJFwvNnx/SJ1vfl9f2Hz/W+5PnN6fp+yvRw0Paa1fYAru8Aqe74/f8Are8AsvDa8PyT0vbT7vzp+P5xyvRCuvF+z/Wc3PiW2Pfm8/1Gw/NXwvO45voAt/HJ5/qj2/h00va24vlgyPSn4fkAou11zPVkwvO2MP+8AAALLUlEQVR4nO2dCZuiuhKGi7AMYXE3giBgs2irbf//f3crdPe9Z1gczQGUufmeZ1pHKSheoEgqRQSQkpKSkpKSkpKSkpKSkpKSeikRZWCNwpXONIvVIXXK2l1RtNOgvqRD4D0MsJF/aN7+laIO5wbX+wDb+D/GuxhgGxJvr5J4e5XE26sk3l4lgldZHk3R7XWM97IUPyYvinef5UkA7mItsr1O8TJ7YTghW1jUYY+78qJ4oyn/e7k8H29YukAUElKBi/BF8V6zkL+w5+MlUfz9Ljs97sqL4gVno+G1SJ6PF8JstS9fI/9xV14VL5Bs9xp4Afwix7/ZXsD0ZfFC4L0KXoiXAFr85+XqelG8qqLzs4V8iGyv29h70RUaMC0N9fBxV14U72W3u+AL+xTZXrd4nV2sgP85n+8EzvwXxfuvJHttvUri7VUSb6+SeHuVxNurJN5eJfH2qlt4L8O5wTUE3oBqgypqd0URdGUn6AodAO/sqAspVsTs7Bt4HbFVnlVBuyHwCgaHJRGz6yH2LgJBOzGzhyTx9iqJt1dJvL2qEe9xN5/PbQTYPv7agvdko+XOBdZm+SjeablCv32FrXj5PsznaNhm+TS8oX6JXB30dN06hNWCN9Rzz9VJatGW+/KjeENd2YQ6ywuv1a4Fr+/uYtf1aVq0jBQ9MTgovH2q6N6jeAHekANzAbLmTsLjweFtg38u06LVrjU48HEign6um4tenoh3+tX8Xz2O1/8+zeyk8WsBvOWYXvDw2Yt4t1+vm78Pb+g1LyCKdyaOV4mao++I8TIraf56eLyB57bYtbvSmXrC21p4MDjegLZ9/Xy8GwG8eCdiWWoYzaZD4r1u+dH+peQvF3vdr11tLzRtxWsecZ+Wy+W2ecWP4yXL0qFjq10r3ukM9w892erNdu2udCbZa+tVs5MpIrJ9E7O7hTchQqvUpkKumIOk04vUElBaWGJ2N9LphqArHhXchQHwCgcHgXJwrj6Cg0DxKdcrPzYoY+9dknh71W28wXcI8GuhYGi87KdxVW9kjQ/v0crSHG82Me9TTgHyWn3yYHjTKLMMgMuedxHQp31SXWJ8eLcxyTcEUuyt76mGH9AqzcHwbmbkVLhghdyVHc9mVLc8QrwTniUNeSVAMeXd0X1SWWIwvKs39CEwECxY+QqD1Lk6zcUI8cZEpZAjC70II7wk82tlieHwzsJLRo4OuhIxiovwt79phHgL23Mhwd7+/goOnjlGFctgeL3s09NhmaArGjg2wKGKZYR4HXCuHC+jXlZ47Jln7xs/vscE439hRUUIp78AbwzhivkUfJ4NxBt27YocEi8GKPUK+orwOwHsqg9gjg/vBBtiax8KcHizYZJBVm1uDoYX3WDegVDGAwPEKVjVwYfx4X3DbnzggpP4POFr+rpVXWIwvDNWunI+vXGsZlALUyPE+y2ifvfWprXhqqF7bebPl6faA4IvjXcmZiczZncpiGwhCZrZN/K9ueA6i0zQbgC8ouXTk0DIzO++fNqX5dP/k0xI3iWJ9y5JvL3qNl7SmsQeHK/70zasuTIuvAZl2AHFnaEBnNHzK09IptXGzyB4VZuX5/gQUp+d0aNJgc3B97yy1Ljwsg2D4yoBnYYBnzInKxTc9aekdJQiBMdTIChgijAIpeiKW50CeFx4ochht9DglMHkgruYORP8kFb6bcMEh8IHel7yzEca8JqMIz/KdiWfPjK8Wwc8PQItAYohQXN0Dy9JqxIdhsGbXoAaFKxZeXivW7yiMDpUUmYjw5vbJiWRW5jAQ91KZ6ugHnyHwXvUjJh46AxEIcYGhRTYh3fGjdel70s4q8gWb3LKOspWzrPwBnR5gewX3uHwtA1WUeZdR48XLLyZ7SlG3HkOccyr5wkUT4m9IcVraELx8GKcuiJaBZsxtvH7QmPDu1gxePvA9s8pZh42M4k3c7NKhmygdi/Pu+QffjmAuUaMZmGQrLLpseEN0V82408NWn7pum9eq7s+EF4XyRKeM3WxmchKV5LxjxT/KPjxvLbng+d7Zz/R6VTdsijeQSokt9N7dKh+sDvdZVfTjan7lKuQK4dsKebKID8LojlCysTMnBu/umKkYqukVzG72vhhH3hl+XSfkgnJXiXx9iqJt1d1htc9bpd8P2Psh0z5M37nxgPwMN58ub3gmoJ3OC6XOuj1iaZreMllu+Q9uz32jIIjAbJodGVUeNXIuHgqKDxFHPEcW15t/pd6vMZsb2jYKU99WKu5l0NWu5HV8AYbQ6UxuLxpYHtBU0V7adfuSmfqDi+2aE9WWdwcWHx6apI1TbgtVD7tBTp2ytcmHLWG5xBqePlT4/4a9ngNkcKJeZevac2jwxtrUJgAzoKP4kDaVAAkgjf0XJXXFJrEUkCvphya8Z6Kcvs5DSgDUh0M+LJrd6UzdYfX06wznmi8SvQtXOGZu2hatUD5tOYZZfn0hlILg05RvSjqeFdaSklZ1WmfWITX07ySZPuya3elM3WHNzNVakJBIPCcZKV2hXc1c7OkxLt24RqXmd/f1XD2kinVOd6wWCQYhWE3frwYHKgKngnb7HDYYefX6io4KJQdeXAI+fifG90VHOIYrABDxOyw9IDVypNLu3ZXOlOneJ2MDzl6eDXqngvd3No2PPb6Oh6utRIUl3tubcEKg64HzhEs/vsaK8Uc/63tsMTTJoapRmwMkGzi1zlwPYzX5vfKAz8Vd/Nr3vDcVR2ve0WoNsP2wpXf0o5GLUX8ZdfuSmfqvNem/bRL08YZgkR7bcZ3oQUvvaiofS6d6dcrsRsnVZHl03fplTNmgUeFJGhG22ccwnApuMqic1c602zKiIDY1hUxI+zmZC9iruwOQnZklLH3D5IZs7sk8d4libdXdYOX8KYu/wRbQHn49X+zWodbqne85WzI5Oufon+70tQnHhFeDV2NVzzTWmZZ2Zq3TrNOOsV/1u94kwLg8kHQhzIBAl7EJ10cd8aMz6ZseTp/dn0x41XlPC/pNxUS9I7XXfGC+hzyDJIj9s4zPkWnUe+MjAmvT90wO6uQ5Yw/UW2fKEYGszZDDAyAlxQKy94nMHEgw/7z3rlij5gVDb2g8eAFK5juLpMwCnnuJSzcPX+SvlpGztX/re2qujT4ZJFOeCKHGuW04CPHu1CXuFczC4JPgGkR5jzp3ZTE7h/vZT6NofA9PMoYKtahvtFHj/dkWXgn2TvAz95ztNvx6bmyp5y9Lk1nYO1T4GnIvYeu7EeP1y0og6zAHc1cwmuC4zM0ZlkHaPcWhQtxoZbBKVP5GDYbO15STPAzDyOCdsr5VPD+B8ye0nLAA4wX0GGNhziZ+OUE+R+uOmmyE9vcQ+q81+bS7xOFpU29qUF7bT8DxKbVNHDy0nhb871u7c0/NWi+1/xxstGVQSokPydCiuaCdu2uGJngKm0xu0F+bXCvGAJSdrmImaHcqk6PxVxJEyE7Y5Dq9L+gfPqvz5jdL4n3Lkm8d+k23u87LquzlHjvUjPe085eYLs8WJCrvUvArU+aJPHepZYpOq9hgh2es08+XD1Swak/Nijx3qNbs0+bFMw1gLNtSB9IvHepdYLZoGCGjXjfptQHVpuxTuK9S22zT2dfs0+bm/jM82ASr5haZ59exCXeNR+9YhKvoFqDg++xICvxhmvCavVYEu9dasXLa+0LxJsnlgOBVl1C4r1LzXh5WepUh6sKp6WqAGi1UTOJ9y7d7LWF34kbN6l9JfHepZkauu0yK6//VTjxb5jdWOGt+Xv3t1xpX+V5KmTX0BXtXu4vMS0E7dp+YPdfuPLuiNk1PnAhJSUlJSUlJSX1wvoP9qxGluXGJD8AAAAASUVORK5CYII="  >
+</img>
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTICUv-gZFW6kZzrTBvo3nPJQZcuU3ocjUs3w&s"></img>
+
+        <ul>
+            <li><strong>Conflict Serializable:</strong> A schedule is conflict serializable if it can be transformed into a serial schedule by swapping non-conflicting operations.</li>
+
+
+
+
+            <li><strong>View Serializable:</strong> A schedule is view serializable if transactions preserve the same read and write views as in a serial execution.</li>
+
+
+
+
+
+        </ul>
+
+
+
+
+
+
+        <p>
+            Let's look at an example of a schedule and how we can check its serializability.
+        </p>
+    </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <section id="interactive-schedule">
+        <h2>Types of Schedules</h2>
+        <p>
+<img src="https://media.geeksforgeeks.org/wp-content/cdn-uploads/20190813142109/Types-of-schedules-in-DBMS-1.jpg">     
+</img>
+            Schedule, as the name suggests, is a process of lining the transactions and executing them one by one. When there are multiple transactions that are running in a concurrent manner and the order of operation is needed to be set so that the operations do not overlap each other, Scheduling is brought into play and the transactions are timed accordingly. The basics of Transactions and Schedules is discussed in Concurrency Control, and Transaction Isolation Levels in DBMS articles. Here we will discuss various types of schedules.
+        </p>
+
+       
+
+
+    </section>
+
+    
+</body>
+</html>
